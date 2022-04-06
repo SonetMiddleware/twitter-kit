@@ -1,0 +1,92 @@
+.btn-primary {
+  width: 135px;
+  height: 28px;
+  color: linear-gradient(
+    105.54deg,
+    #ff9a46 8.7%,
+    #ff67c1 47.7%,
+    #9d5fe9 92.01%
+  );
+  font-weight: 600;
+  font-size: 14px;
+  font-family: Poppins;
+  font-style: normal;
+
+  // background: linear-gradient(
+  //   105.54deg,
+  //   #ff9a46 8.7%,
+  //   #ff67c1 47.7%,
+  //   #9d5fe9 92.01%
+  // );
+
+  background: linear-gradient(#fff, #fff) padding-box,
+    /*this is your grey background*/
+      linear-gradient(139.61deg, #ff9a46 3.04%, #ff67c1 51.18%, #9d5fe9 97.3%)
+      border-box;
+
+  border: 1px solid transparent;
+
+  border-radius: 10px;
+
+  box-shadow: 3px 3px 5px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+
+  > span {
+    font-weight: 600;
+    font-size: 14px;
+    font-family: Poppins;
+    font-style: normal;
+    background: linear-gradient(
+      105.54deg,
+      #ff9a46 8.7%,
+      #ff67c1 47.7%,
+      #9d5fe9 92.01%
+    );
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+}
+
+.btn-primary:hover {
+  color: #ffffff;
+  background: linear-gradient(
+    92.68deg,
+    #ff9a46 0%,
+    #ff67c1 49.34%,
+    #9d5fe9 100.77%
+  );
+  > span {
+    color: #ffffff;
+    -webkit-text-fill-color: #ffffff;
+  }
+}
+
+.btn-secondary {
+  width: 100px;
+  height: 32px;
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 14px;
+  font-family: Poppins;
+  font-style: normal;
+  line-height: 15px;
+  background: linear-gradient(
+    100.51deg,
+    #ff9a46 11.69%,
+    #ff67c1 53.3%,
+    #9d5fe9 93.18%
+  );
+  border: none;
+  border-radius: 15px;
+  box-shadow: 3px 3px 5px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+}
+.btn-secondary:hover {
+  color: #566370;
+
+  text-align: center;
+  background: #e5e5e5;
+  border: 1px solid #e5e5e5;
+  border-radius: 15px;
+  filter: drop-shadow(3px 3px 5px rgba(0, 0, 0, 0.1));
+}

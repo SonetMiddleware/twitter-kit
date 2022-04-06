@@ -1,0 +1,91 @@
+.bind-container {
+  position: relative;
+  top: 0px;
+  left: 0px;
+  width: 240px;
+
+  padding: 26px 28px;
+  padding-top: 0;
+
+  background: #ffffff;
+
+  background: linear-gradient(#fff, #fff) padding-box,
+    /*this is your grey background*/
+      linear-gradient(139.61deg, #ff9a46 3.04%, #ff67c1 51.18%, #9d5fe9 97.3%)
+      border-box;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  box-shadow: -5px -5px 10px rgba(0, 0, 0, 0.1), 5px 5px 10px rgba(0, 0, 0, 0.2);
+
+  .icon-close {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    width: 12px;
+    cursor: pointer;
+  }
+  .logo {
+    margin-top: 33px;
+    margin-bottom: 15px;
+    text-align: center;
+    > img {
+      width: 40px;
+    }
+  }
+  .title {
+    margin-bottom: 7px;
+    margin-bottom: 8px;
+    color: #000000;
+    font-weight: 600;
+    font-size: 10px;
+    font-family: Poppins;
+    font-style: normal;
+    line-height: 24px;
+    text-align: center;
+  }
+  .user-id {
+    margin-bottom: 10px;
+    text-align: center;
+    > span {
+      display: block;
+      box-sizing: border-box;
+      width: 135px;
+      height: auto;
+      margin: 0 auto;
+      padding: 7px 14px;
+
+      color: #566370;
+      font-weight: normal;
+      font-size: 10px;
+      font-family: Poppins;
+      font-style: normal;
+      line-height: 15px;
+      text-align: center;
+      word-break: break-all;
+      background: #ffffff;
+      border: 1px solid #e5e5e5;
+      border-radius: 10px;
+    }
+  }
+  .bind-btns {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 0 auto;
+    margin-top: 8px;
+    margin-bottom: 5px;
+    > button {
+      margin-bottom: 8px;
+    }
+  }
+  .tips {
+    color: #566370;
+    font-weight: normal;
+    font-size: 8px;
+    font-family: Poppins;
+    font-style: normal;
+    line-height: 12px;
+    /* identical to box height */
+    text-align: center;
+  }
+}
