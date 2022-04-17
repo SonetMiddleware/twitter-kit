@@ -203,9 +203,6 @@ const handleTweetImg = async (imgEle: HTMLImageElement, username: string) => {
   const imgSrc = imgEle.src
   console.log('>>>>>>>>imgSRc: ', imgSrc)
   if (imgSrc) {
-    const account = await getUserAccount()
-    const twitterId = await getTwitterId()
-    console.log('>>>>>account twitterId', account, twitterId)
     let res
     try {
       res = await decodeQrcodeFromImgSrc(imgSrc)
@@ -241,10 +238,20 @@ const handleTweetImg = async (imgEle: HTMLImageElement, username: string) => {
   }
 }
 
+const findTweetAuthorId = (tweetNode: HTMLDivElement) => {
+  const aList = tweetNode.querySelectorAll('a');
+  for (const aItem of aList) {
+    const spans = aItem.querySelectorAll('span');
+    for (const spanItem of spans) {
+      if (spanItem.innerText.startsWith('@')) {
+        return spanItem.innerText;
+      }
+    }
+  }
+};
+
 async function handleTwitterImg(tweetNode: any) {
-  const _username = tweetNode!
-    .querySelectorAll('a')[1]
-    .querySelectorAll('span')[2]?.innerText
+  const _username = findTweetAuthorId(tweetNode);
   console.log('handleTwitterImg username: ', _username)
 
   const imgNodes = tweetNode.querySelectorAll(
