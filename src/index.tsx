@@ -24,7 +24,8 @@ import {
   BINDING_CONTENT_TITLE,
   getTwitterBindResult,
   IBindResultData,
-  getUserAccount
+  getUserAccount,
+  decodeMetaData
 } from '@soda/soda-core'
 
 import Logo from './assets/images/logo.png'
@@ -210,15 +211,10 @@ const handleTweetImg = async (imgEle: HTMLImageElement, username: string) => {
       console.log(err)
     }
     console.log('qrcode res: ', res)
-    let metaData: string[] = []
+    let metaData: any = await decodeMetaData(res || '')
     if (res) {
-      const resArrs = res.split('?')
-      metaData =
-        resArrs.length === 1 ? resArrs[0].split('_') : resArrs[1].split('_')
-      if (metaData.length === 2) {
-        const ipfsHash = metaData[0]
-        console.log('>>>>>hash', ipfsHash)
-        const ipfsOrigin = `https://${ipfsHash}.ipfs.dweb.link/`
+      if (metaData && metaData.tokenId && metaData.source) {
+        const ipfsOrigin = metaData.source
         // bgDiv.style.backgroundImage = `url(${ipfsOrigin})` // blocked by CSP
         bgDiv.style.display = 'none'
         imgEle.src = ipfsOrigin
@@ -239,19 +235,19 @@ const handleTweetImg = async (imgEle: HTMLImageElement, username: string) => {
 }
 
 const findTweetAuthorId = (tweetNode: HTMLDivElement) => {
-  const aList = tweetNode.querySelectorAll('a');
+  const aList = tweetNode.querySelectorAll('a')
   for (const aItem of aList) {
-    const spans = aItem.querySelectorAll('span');
+    const spans = aItem.querySelectorAll('span')
     for (const spanItem of spans) {
       if (spanItem.innerText.startsWith('@')) {
-        return spanItem.innerText;
+        return spanItem.innerText
       }
     }
   }
-};
+}
 
 async function handleTwitterImg(tweetNode: any) {
-  const _username = findTweetAuthorId(tweetNode);
+  const _username = findTweetAuthorId(tweetNode)
   console.log('handleTwitterImg username: ', _username)
 
   const imgNodes = tweetNode.querySelectorAll(
@@ -266,7 +262,7 @@ async function handleTwitterImg(tweetNode: any) {
     }
     divParent.style.position = 'relative'
     const imgEle = node.querySelector('img[src*=media]') as HTMLImageElement
-    const dom = await handleTweetImg(imgEle, _username)
+    const dom = await handleTweetImg(imgEle, _username!)
     divParent?.appendChild(dom)
   }
   // })

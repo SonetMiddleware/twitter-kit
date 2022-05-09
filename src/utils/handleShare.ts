@@ -6,7 +6,8 @@ import {
   generateQrCodeBase64,
   dispatchCustomEvents,
   isMobileTwitter,
-  POST_SHARE_TEXT
+  POST_SHARE_TEXT,
+  decodeMetaData
 } from '@soda/soda-core'
 
 import { message } from 'antd'
@@ -76,11 +77,12 @@ const shareHandler = async () => {
   try {
     const meta = await getLocal(StorageKeys.SHARING_NFT_META)
     if (!meta) return
-    const [uri, tokenId] = meta.split('_')
-    console.log('shareHandler: ', uri, tokenId)
-    const imgUrl = `https://${uri}.ipfs.dweb.link/`
+    const metaData = await decodeMetaData(meta)
+    const { source, tokenId } = metaData
+    console.log('shareHandler: ', source, tokenId)
+    const imgUrl = source
     const qrcode = await generateQrCodeBase64(meta)
-    if (meta && uri && tokenId) {
+    if (meta && tokenId) {
       const [imgDataUrl, imgDataBlob] = await mixWatermarkImg(imgUrl, qrcode)
       const clipboardData = []
       newPostTrigger()
