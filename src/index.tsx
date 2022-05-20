@@ -3,7 +3,7 @@ import React from 'react'
 import * as PubSub from 'pubsub-js'
 import * as ReactDOM from 'react-dom'
 import * as Selectors from './selector'
-import { startWatch } from '@soda/soda-core'
+import { getChainId, startWatch } from '@soda/soda-core'
 import {
   MutationObserverWatcher,
   IntervalWatcher
@@ -27,7 +27,8 @@ import {
   getUserAccount,
   decodeMetaData
 } from '@soda/soda-core'
-
+import { getStorageService } from '@soda/soda-storage-sdk'
+import { getMediaTypes } from '@soda/soda-media-sdk'
 import Logo from './assets/images/logo.png'
 import {
   untilElementAvailable,
@@ -35,6 +36,8 @@ import {
   postsContentSelector
 } from './selector'
 import { postIdParser } from './utils/posts'
+import getAssetServices from '@soda/soda-asset'
+import { getAppConfig } from '@soda/soda-package-index'
 
 import { message } from 'antd'
 import postShareHandler, { pasteShareTextToEditor } from './utils/handleShare'
@@ -212,15 +215,31 @@ const handleTweetImg = async (imgEle: HTMLImageElement, username: string) => {
     }
     console.log('qrcode res: ', res)
     let metaData: any = await decodeMetaData(res || '')
+    const chainId = await getChainId()
+    const assetService = getAppConfig(chainId).assetService as string[]
+    const nft =
+      //@ts-ignore
+      await getAssetServices(assetService)[assetService[0]].getNFTFunc(metaData)
+    const storageService = nft.storage || 'ipfs'
+    const mediaType = nft.type || 'image'
     if (res) {
       if (metaData && metaData.tokenId && metaData.source) {
         const ipfsOrigin = metaData.source
         // bgDiv.style.backgroundImage = `url(${ipfsOrigin})` // blocked by CSP
         bgDiv.style.display = 'none'
-        imgEle.src = ipfsOrigin
+        // imgEle.src = ipfsOrigin
         // imgEle.src = imgDataUrl;
         imgEle.style.opacity = '1'
         imgEle.style.zIndex = '1'
+        //@ts-ignore
+        const source = await getStorageService(storageService).loadFunc(
+          nft.source,
+          { uri: true }
+        )
+        //@ts-ignore
+        getMediaTypes([mediaType])[mediaType].renderFunc(source, imgEle, {
+          replace: true
+        })
       }
     }
     const dom: any = document.createElement('div')

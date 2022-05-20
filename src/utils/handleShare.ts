@@ -83,7 +83,7 @@ const shareHandler = async () => {
     const imgUrl = source
     const qrcode = await generateQrCodeBase64(meta)
     if (meta && tokenId) {
-      const [imgDataUrl, imgDataBlob] = await mixWatermarkImg(imgUrl, qrcode)
+      const [imgDataUrl, imgDataBlob] = await mixWatermarkImg(imgUrl!, qrcode)
       const clipboardData = []
       newPostTrigger()
       message.success(

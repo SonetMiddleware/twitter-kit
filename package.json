@@ -14,8 +14,12 @@
   "license": "ISC",
   "dependencies": {
     "@dimensiondev/holoflows-kit": "^0.8.0-20210429202414-74fb9a1",
-    "@soda/soda-core": "workspace:^0.0.1",
     "@soda/facebook-kit": "workspace:^0.0.1",
+    "@soda/soda-asset": "workspace:^0.0.1",
+    "@soda/soda-core": "workspace:^0.0.1",
+    "@soda/soda-media-sdk": "workspace:^0.0.1",
+    "@soda/soda-package-index": "workspace:^0.0.1",
+    "@soda/soda-storage-sdk": "workspace:^0.0.1",
     "@types/pubsub-js": "^1.8.2",
     "antd": "^4.19.3",
     "babel-plugin-file-loader": "^2.0.0",
