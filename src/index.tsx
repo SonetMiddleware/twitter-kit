@@ -162,7 +162,7 @@ function collectPostImgs() {
               content_id: tweetId
             })
             console.log('bindPost: ', bindRes)
-            message.success('Bind successfully!')
+            message.success('Bind successful!')
             // window.location.reload();
           }
         }
