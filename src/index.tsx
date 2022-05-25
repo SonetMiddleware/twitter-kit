@@ -213,7 +213,7 @@ const handleTweetImg = async (imgEle: HTMLImageElement, username: string) => {
     } catch (err) {
       console.log(err)
     }
-    console.log('qrcode res: ', res)
+    // console.log('qrcode res: ', res)
     let metaData: any = await decodeMetaData(res || '')
     const chainId = await getChainId()
     const assetService = getAppConfig(chainId).assetService as string[]
@@ -222,6 +222,7 @@ const handleTweetImg = async (imgEle: HTMLImageElement, username: string) => {
       await getAssetServices(assetService)[assetService[0]].getNFTFunc(metaData)
     const storageService = nft.storage || 'ipfs'
     const mediaType = nft.type || 'image'
+    console.log('metaData: ', metaData)
     if (res) {
       if (metaData && metaData.tokenId && metaData.source) {
         const ipfsOrigin = metaData.source
