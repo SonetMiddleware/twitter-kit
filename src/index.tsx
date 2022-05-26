@@ -100,9 +100,13 @@ const nameWatcher = new MutationObserverWatcher(
 
 //@ts-ignore
 nameWatcher.on('onAdd', async () => {
-  const nickname = nameWatcher.firstDOMProxy.current.innerText
-  console.log('nickname: ', nickname)
-  await saveLocal(StorageKeys.TWITTER_NICKNAME, nickname)
+  //@ts-ignore
+  const href = nameWatcher.firstDOMProxy.current.href
+  if (href && href.split('/').length === 2) {
+    const nickname = '@' + href.split('/')[1]
+    console.log('nickname: ', nickname)
+    await saveLocal(StorageKeys.TWITTER_NICKNAME, nickname)
+  }
 })
 
 let binding: IBindResultData
@@ -150,7 +154,7 @@ function collectPostImgs() {
           if (_binding && _binding.content_id === tweetId) {
             // already binded post
             return
-          } else if (_binding && !_binding.content_id) {
+          } else if (!_binding || (_binding && !_binding.content_id)) {
             const addr = await getUserAccount()
             const tid = await getTwitterId()
 
@@ -224,7 +228,12 @@ const handleTweetImg = async (imgEle: HTMLImageElement, username: string) => {
     const mediaType = nft.type || 'image'
     console.log('metaData: ', metaData)
     if (res) {
-      if (metaData && metaData.tokenId && metaData.source) {
+      if (
+        metaData &&
+        metaData.tokenId &&
+        metaData.source &&
+        typeof metaData.source === 'string'
+      ) {
         const ipfsOrigin = metaData.source
         // bgDiv.style.backgroundImage = `url(${ipfsOrigin})` // blocked by CSP
         bgDiv.style.display = 'none'
@@ -237,10 +246,13 @@ const handleTweetImg = async (imgEle: HTMLImageElement, username: string) => {
           nft.source,
           { uri: true }
         )
-        //@ts-ignore
-        getMediaTypes([mediaType])[mediaType].renderFunc(source, imgEle, {
-          replace: true
-        })
+
+        if (source && source.startsWith && source.startsWith('http')) {
+          //@ts-ignore
+          getMediaTypes([mediaType])[mediaType].renderFunc(source, imgEle, {
+            replace: true
+          })
+        }
       }
     }
     const dom: any = document.createElement('div')

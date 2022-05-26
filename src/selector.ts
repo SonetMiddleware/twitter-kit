@@ -27,9 +27,7 @@ export const postEditorToolbarSelector: () => LiveSelector<E, true> = () =>
   querySelector<E>('[data-testid="toolBar"] > div')
 
 export const twitterNickNameSelector: () => LiveSelector<E, true> = () =>
-  querySelector(
-    '[data-testid="SideNav_AccountSwitcher_Button"]>div:nth-child(2)>div>div:nth-child(2)>div'
-  ).querySelector('span')
+  querySelector('main[role="main"] a')
 export const isCompose = () => globalThis.location.pathname.includes('compose')
 
 export const postEditorInPopupSelector: () => LiveSelector<E, true> = () =>
