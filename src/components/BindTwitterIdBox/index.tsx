@@ -193,7 +193,7 @@ export default function BindTwitterIdBox(props: IProps) {
         <div>
           <p className="title">You need to send post to finish the binding.</p>
           <div className="bind-btns">
-            <button className="btn-primary" onClick={handleBind}>
+            <button className="soda-btn-primary" onClick={handleBind}>
               Send Post
             </button>
             <a

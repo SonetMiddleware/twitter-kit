@@ -8,7 +8,7 @@ interface IButtonProps {
 export default (props: IButtonProps) => {
   const { type, children, className, loading, ...rest } = props
   return (
-    <button {...rest} className={`btn-${type}  ${className}`}>
+    <button {...rest} className={`soda-btn-${type}  ${className}`}>
       {' '}
       {loading && <LoadingOutlined />}
       {type === 'primary' && <span>{children}</span>}
