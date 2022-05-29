@@ -41,6 +41,7 @@ import { getAppConfig } from '@soda/soda-package-index'
 
 import { message } from 'antd'
 import postShareHandler, { pasteShareTextToEditor } from './utils/handleShare'
+import { getUserID } from './utils'
 
 export const PLAT_TWIN_OPEN = 'PLAT_TWIN_OPEN'
 
@@ -100,10 +101,13 @@ const nameWatcher = new MutationObserverWatcher(
 
 //@ts-ignore
 nameWatcher.on('onAdd', async () => {
+  debugger
   //@ts-ignore
-  const href = nameWatcher.firstDOMProxy.current.href
-  if (href && href.split('/').length === 2) {
-    const nickname = '@' + href.split('/')[1]
+  const navLeft = nameWatcher.firstDOMProxy.current.querySelectorAll('a')
+  const href = navLeft[6]?.href // profile link
+  if (href) {
+    const userId = getUserID(href)
+    const nickname = '@' + userId
     console.log('nickname: ', nickname)
     await saveLocal(StorageKeys.TWITTER_NICKNAME, nickname)
   }
@@ -148,13 +152,20 @@ function collectPostImgs() {
       async function handleBindPost() {
         const bindText = BINDING_CONTENT_TITLE
         if (tweetNode!.innerText.indexOf(bindText) > -1) {
-          const tweetId = tweetNode!.querySelectorAll('a')[2].href
+          let tweetId = ''
+          const tweetLinks = tweetNode!.querySelectorAll('a')
+          for (let i = 0; i < tweetLinks.length; i++) {
+            if (tweetLinks[i].href.includes('/status/')) {
+              tweetId = tweetLinks[i].href
+              break
+            }
+          }
           console.log('tweetId: ', tweetId)
           const _binding = await getBindingContent()
           if (_binding && _binding.content_id === tweetId) {
             // already binded post
             return
-          } else if (!_binding || (_binding && !_binding.content_id)) {
+          } else if (_binding && !_binding.content_id) {
             const addr = await getUserAccount()
             const tid = await getTwitterId()
 
