@@ -3,32 +3,30 @@ import React from 'react'
 import * as PubSub from 'pubsub-js'
 import * as ReactDOM from 'react-dom'
 import * as Selectors from './selector'
-import { getChainId, startWatch } from '@soda/soda-core'
 import {
   MutationObserverWatcher,
   IntervalWatcher
 } from '@dimensiondev/holoflows-kit'
 import {
+  startWatch,
   ResourceDialog,
-  ImgMask,
-  BindTwitterIdBox,
-  decodeQrcodeFromImgSrc,
+  InlineTokenToolbar,
+  InlineApplicationBindBox,
   saveLocal,
-  StorageKeys,
   CustomEventId,
-  getTwitterId,
+  postShareHandler,
   removeTextInSharePost,
-  dispatchPaste,
-  bindPost,
-  PLATFORM,
-  BINDING_CONTENT_TITLE,
-  getTwitterBindResult,
-  IBindResultData,
-  getUserAccount,
-  decodeMetaData
+  dispatchPaste
+} from '@soda/soda-core-ui'
+import {
+  getAddress,
+  bind2WithWeb2Proof,
+  matchBindingPattern,
+  getBindResult,
+  renderTokenFromCacheMedia,
+  BindInfo,
+  registerApplication
 } from '@soda/soda-core'
-import { getStorageService } from '@soda/soda-storage-sdk'
-import { getMediaTypes } from '@soda/soda-media-sdk'
 import Logo from './assets/images/logo.png'
 import {
   untilElementAvailable,
@@ -36,12 +34,12 @@ import {
   postsContentSelector
 } from './selector'
 import { postIdParser } from './utils/posts'
-import getAssetServices from '@soda/soda-asset'
-import { getAppConfig } from '@soda/soda-package-index'
 
 import { message } from 'antd'
-import postShareHandler, { pasteShareTextToEditor } from './utils/handleShare'
+import { newPostTrigger, pasteShareTextToEditor } from './utils/handleShare'
+import { getTwitterId, StorageKeys } from './utils/utils'
 
+export const APP_NAME = 'Twitter'
 export const PLAT_TWIN_OPEN = 'PLAT_TWIN_OPEN'
 
 function App() {
@@ -100,21 +98,32 @@ const nameWatcher = new MutationObserverWatcher(
 
 //@ts-ignore
 nameWatcher.on('onAdd', async () => {
-  const nickname = nameWatcher.firstDOMProxy.current.innerText
-  console.log('nickname: ', nickname)
-  await saveLocal(StorageKeys.TWITTER_NICKNAME, nickname)
+  //@ts-ignore
+  const href = nameWatcher.firstDOMProxy.current.href
+  if (href) {
+    let h = href as string
+    const idx = h.indexOf('twitter.com')
+    h = idx >= 0 ? h.substring(idx) : h
+    const hs = h.split('/')
+    if (hs.length === 2) {
+      const nickname = '@' + hs[1]
+      console.debug('[twitter-hook] app account: ', nickname)
+      await saveLocal(StorageKeys.TWITTER_NICKNAME, nickname)
+    }
+  }
 })
 
-let binding: IBindResultData
+let binding: BindInfo
 async function getBindingContent() {
   if (binding) return binding
-  const addr = await getUserAccount()
-  const tid = await getTwitterId()
-  const bindResult = await getTwitterBindResult({
-    addr,
-    tid
+  const address = await getAddress()
+  const appid = await getTwitterId()
+  const bindResult = await getBindResult({
+    address,
+    application: APP_NAME,
+    appid
   })
-  const _binding = bindResult.find((item) => item.platform === PLATFORM.Twitter)
+  const _binding = bindResult.find((item) => item.application === APP_NAME)
   if (_binding) {
     binding = _binding
     return binding
@@ -132,6 +141,7 @@ function collectPostImgs() {
       ].join()
     )
   }
+  let globalBinding = false
   const postWatcher = new IntervalWatcher(postsContentSelector())
     .useForeach((node, _, proxy) => {
       const tweetNode = getTweetNode(node)
@@ -142,28 +152,24 @@ function collectPostImgs() {
       }
 
       async function handleBindPost() {
-        const bindText = BINDING_CONTENT_TITLE
-        if (tweetNode!.innerText.indexOf(bindText) > -1) {
+        if (matchBindingPattern(tweetNode!.innerText)) {
+          // FIXME: shall compare tweet host with appid
           const tweetId = tweetNode!.querySelectorAll('a')[2].href
-          console.log('tweetId: ', tweetId)
           const _binding = await getBindingContent()
-          if (_binding && _binding.content_id === tweetId) {
+          if (_binding && _binding.contentId === tweetId) {
             // already binded post
             return
-          } else if (_binding && !_binding.content_id) {
-            const addr = await getUserAccount()
-            const tid = await getTwitterId()
-
-            console.log('handleBindPost')
-            const bindRes = await bindPost({
-              addr,
-              tid,
-              platform: PLATFORM.Twitter,
-              content_id: tweetId
+          } else if (!_binding || (_binding && !_binding.contentId)) {
+            const address = await getAddress()
+            const appid = await getTwitterId()
+            const bindRes = await bind2WithWeb2Proof({
+              address,
+              appid,
+              application: APP_NAME,
+              contentId: tweetId
             })
-            console.log('bindPost: ', bindRes)
-            message.success('Bind successfully!')
-            // window.location.reload();
+            // FIXME: the bind verification is wrong, cancel notification
+            // if (bindRes) message.success('Bind successful!')
           }
         }
       }
@@ -193,7 +199,8 @@ function collectPostInfo(tweetNode: HTMLDivElement | null) {
   untilElementAvailable(postsImageSelector(tweetNode), 10000)
     .then(() => handleTwitterImg(tweetNode))
     .catch((err) => {
-      console.log(err)
+      // no qr code matched
+      // console.log(err)
     })
 }
 
@@ -203,54 +210,34 @@ const className = 'plat-meta-span'
 
 const handleTweetImg = async (imgEle: HTMLImageElement, username: string) => {
   const bgDiv = imgEle.previousElementSibling! as HTMLDivElement
-  console.log('>>>>>bgdiv: ', bgDiv)
+  console.debug('[twitter-hook] image container: ', bgDiv)
   const imgSrc = imgEle.src
-  console.log('>>>>>>>>imgSRc: ', imgSrc)
+  console.debug('[twitter-hook] image source: ', imgSrc)
   if (imgSrc) {
-    let res
-    try {
-      res = await decodeQrcodeFromImgSrc(imgSrc)
-    } catch (err) {
-      console.log(err)
+    const res = await renderTokenFromCacheMedia(imgSrc, {
+      dom: imgEle,
+      config: { replace: true }
+    })
+    if (res && res.result) {
+      bgDiv.style.display = 'none'
+      imgEle.style.opacity = '1'
+      imgEle.style.zIndex = '1'
+      const dom: any = document.createElement('div')
+      dom.style.cssText = spanStyles
+      dom.className = className
+      ReactDOM.render(
+        <InlineTokenToolbar
+          token={res.token}
+          originImgSrc={imgSrc}
+          username={username}
+          app={APP_NAME}
+        />,
+        dom
+      )
+      return dom
     }
-    console.log('qrcode res: ', res)
-    let metaData: any = await decodeMetaData(res || '')
-    const chainId = await getChainId()
-    const assetService = getAppConfig(chainId).assetService as string[]
-    const nft =
-      //@ts-ignore
-      await getAssetServices(assetService)[assetService[0]].getNFTFunc(metaData)
-    const storageService = nft.storage || 'ipfs'
-    const mediaType = nft.type || 'image'
-    if (res) {
-      if (metaData && metaData.tokenId && metaData.source) {
-        const ipfsOrigin = metaData.source
-        // bgDiv.style.backgroundImage = `url(${ipfsOrigin})` // blocked by CSP
-        bgDiv.style.display = 'none'
-        // imgEle.src = ipfsOrigin
-        // imgEle.src = imgDataUrl;
-        imgEle.style.opacity = '1'
-        imgEle.style.zIndex = '1'
-        //@ts-ignore
-        const source = await getStorageService(storageService).loadFunc(
-          nft.source,
-          { uri: true }
-        )
-        //@ts-ignore
-        getMediaTypes([mediaType])[mediaType].renderFunc(source, imgEle, {
-          replace: true
-        })
-      }
-    }
-    const dom: any = document.createElement('div')
-    dom.style.cssText = spanStyles
-    dom.className = className
-    ReactDOM.render(
-      <ImgMask meta={metaData} originImgSrc={imgSrc} username={username} />,
-      dom
-    )
-    return dom
   }
+  return null
 }
 
 const findTweetAuthorId = (tweetNode: HTMLDivElement) => {
@@ -267,7 +254,7 @@ const findTweetAuthorId = (tweetNode: HTMLDivElement) => {
 
 async function handleTwitterImg(tweetNode: any) {
   const _username = findTweetAuthorId(tweetNode)
-  console.log('handleTwitterImg username: ', _username)
+  console.debug('[twitter-hook] handleTwitterImg username: ', _username)
 
   const imgNodes = tweetNode.querySelectorAll(
     '[data-testid="tweet"] > div > div a[href*="photo"]'
@@ -282,7 +269,7 @@ async function handleTwitterImg(tweetNode: any) {
     divParent.style.position = 'relative'
     const imgEle = node.querySelector('img[src*=media]') as HTMLImageElement
     const dom = await handleTweetImg(imgEle, _username!)
-    divParent?.appendChild(dom)
+    if (dom) divParent?.appendChild(dom)
   }
   // })
 }
@@ -329,7 +316,6 @@ fullScreenImgWatcher.on('onAdd', async () => {
 
 //@ts-ignore
 fullScreenImgLoadingWatcher.on('onRemove', () => {
-  console.log('>>>>>>>listChange')
   handleFullscreenTweetImgs()
 })
 
@@ -345,7 +331,7 @@ mainWatcher.on('onAdd', () => {
   } else {
     creatingBindBox = true
   }
-  console.log('mainDiv: ', mainWatcher.firstDOMProxy)
+  console.debug('[twitter-hook] mainDiv: ', mainWatcher.firstDOMProxy)
   const mainDiv: any = document.querySelector('[role=main]')
   // @ts-ignore
   mainDiv.style = 'position:relative'
@@ -353,13 +339,27 @@ mainWatcher.on('onAdd', () => {
   dom.id = bindBoxId
   dom.style = 'position:fixed;top:20px;right:20px;'
   mainDiv?.appendChild(dom)
-  ReactDOM.render(<BindTwitterIdBox platform={PLATFORM.Twitter} />, dom)
+  ReactDOM.render(<InlineApplicationBindBox app={APP_NAME} />, dom)
   mainWatcher.stopWatch()
 })
 
+function getUserPage(meta: { appid: string }) {
+  const { appid } = meta
+  const host = getConfig().hostLeadingUrl
+  return `${host}/${appid}`
+}
+export function getConfig() {
+  return {
+    hostIdentifier: 'twitter.com',
+    hostLeadingUrl: 'https://twitter.com',
+    hostLeadingUrlMobile: 'https://mobile.twitter.com',
+    icon: 'images/twitter.png'
+  }
+}
+
 function main() {
   // initial call
-  getUserAccount()
+  getAddress()
   getTwitterId()
   startWatch(watcher)
   startWatch(topSidebarWatcher)
@@ -368,7 +368,10 @@ function main() {
   // render nft resources dialog
   const div = document.createElement('div')
   document.body.appendChild(div)
-  ReactDOM.render(<ResourceDialog publishFunc={pasteShareTextToEditor} />, div)
+  ReactDOM.render(
+    <ResourceDialog app={APP_NAME} publishFunc={pasteShareTextToEditor} />,
+    div
+  )
 
   collectPostImgs()
   startWatch(fullScreenImgWatcher)
@@ -379,7 +382,7 @@ function main() {
   }
 
   //handle share on intial
-  postShareHandler()
+  postShareHandler(APP_NAME)
 
   const { apply } = Reflect
   document.addEventListener(CustomEventId, (e) => {
@@ -398,3 +401,16 @@ function main() {
 }
 
 export default main
+
+export const init = () => {
+  registerApplication({
+    name: APP_NAME,
+    meta: {
+      getAccount: getTwitterId,
+      getUserPage,
+      getConfig,
+      newPostTrigger,
+      pasteShareTextToEditor
+    }
+  })
+}
