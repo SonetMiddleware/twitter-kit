@@ -38,6 +38,7 @@ import { postIdParser } from './utils/posts'
 import { message } from 'antd'
 import { newPostTrigger, pasteShareTextToEditor } from './utils/handleShare'
 import { getTwitterId, StorageKeys } from './utils/utils'
+import { getUserID } from './utils'
 
 export const APP_NAME = 'Twitter'
 export const PLAT_TWIN_OPEN = 'PLAT_TWIN_OPEN'
@@ -101,15 +102,10 @@ nameWatcher.on('onAdd', async () => {
   //@ts-ignore
   const href = nameWatcher.firstDOMProxy.current.href
   if (href) {
-    let h = href as string
-    const idx = h.indexOf('twitter.com')
-    h = idx >= 0 ? h.substring(idx) : h
-    const hs = h.split('/')
-    if (hs.length === 2) {
-      const nickname = '@' + hs[1]
-      console.debug('[twitter-hook] app account: ', nickname)
-      await saveLocal(StorageKeys.TWITTER_NICKNAME, nickname)
-    }
+    const userId = getUserID(href)
+    const nickname = '@' + userId
+    console.debug('[twitter-hook] app account: ', nickname)
+    await saveLocal(StorageKeys.TWITTER_NICKNAME, nickname)
   }
 })
 
@@ -154,12 +150,19 @@ function collectPostImgs() {
       async function handleBindPost() {
         if (matchBindingPattern(tweetNode!.innerText)) {
           // FIXME: shall compare tweet host with appid
-          const tweetId = tweetNode!.querySelectorAll('a')[2].href
+          let tweetId = ''
+          const tweetLinks = tweetNode!.querySelectorAll('a')
+          for (let i = 0; i < tweetLinks.length; i++) {
+            if (tweetLinks[i].href.includes('/status/')) {
+              tweetId = tweetLinks[i].href
+              break
+            }
+          }
           const _binding = await getBindingContent()
           if (_binding && _binding.contentId === tweetId) {
             // already binded post
             return
-          } else if (!_binding || (_binding && !_binding.contentId)) {
+          } else if (_binding && !_binding.contentId) {
             const address = await getAddress()
             const appid = await getTwitterId()
             const bindRes = await bind2WithWeb2Proof({
@@ -168,8 +171,7 @@ function collectPostImgs() {
               application: APP_NAME,
               contentId: tweetId
             })
-            // FIXME: the bind verification is wrong, cancel notification
-            // if (bindRes) message.success('Bind successful!')
+            if (bindRes) message.success('Bind successful!')
           }
         }
       }
@@ -343,10 +345,10 @@ mainWatcher.on('onAdd', () => {
   mainWatcher.stopWatch()
 })
 
-function getUserPage(meta: { appid: string }) {
+function getUserPage(meta: { appid?: string }) {
   const { appid } = meta
   const host = getConfig().hostLeadingUrl
-  return `${host}/${appid}`
+  return `${host}/${appid ? appid : ''}`
 }
 export function getConfig() {
   return {
