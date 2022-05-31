@@ -100,7 +100,8 @@ const nameWatcher = new MutationObserverWatcher(
 //@ts-ignore
 nameWatcher.on('onAdd', async () => {
   //@ts-ignore
-  const href = nameWatcher.firstDOMProxy.current.href
+  const navLeft = nameWatcher.firstDOMProxy.current as HTMLAnchorElement
+  const href = navLeft?.href // profile link
   if (href) {
     const userId = getUserID(href)
     const nickname = '@' + userId
@@ -150,11 +151,20 @@ function collectPostImgs() {
       async function handleBindPost() {
         if (matchBindingPattern(tweetNode!.innerText)) {
           // FIXME: shall compare tweet host with appid
-          let tweetId = ''
+          let tweetId = '',
+            authorId = '',
+            authorAddress = ''
           const tweetLinks = tweetNode!.querySelectorAll('a')
           for (let i = 0; i < tweetLinks.length; i++) {
             if (tweetLinks[i].href.includes('/status/')) {
               tweetId = tweetLinks[i].href
+              const url = new URL(tweetId)
+              authorId =
+                '@' +
+                url.pathname.replace(/^\//, '').replace(/\/$/, '').split('/')[0]
+              authorAddress =
+                tweetNode!.innerText.match(/(\b0x[a-fA-F0-9]{40}\b)/g)?.[0] ||
+                ''
               break
             }
           }
@@ -165,13 +175,15 @@ function collectPostImgs() {
           } else if (_binding && !_binding.contentId) {
             const address = await getAddress()
             const appid = await getTwitterId()
-            const bindRes = await bind2WithWeb2Proof({
-              address,
-              appid,
-              application: APP_NAME,
-              contentId: tweetId
-            })
-            if (bindRes) message.success('Bind successful!')
+            if (authorId === appid && authorAddress === address) {
+              const bindRes = await bind2WithWeb2Proof({
+                address,
+                appid,
+                application: APP_NAME,
+                contentId: tweetId
+              })
+              if (bindRes) message.success('Bind successful!')
+            }
           }
         }
       }
