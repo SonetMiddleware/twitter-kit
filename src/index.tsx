@@ -3,7 +3,7 @@ import React from 'react'
 import * as PubSub from 'pubsub-js'
 import * as ReactDOM from 'react-dom'
 import * as Selectors from './selector'
-import { getChainId, startWatch } from '@soda/soda-core'
+import { getChainId, startWatch, SUCCESS_CODE } from '@soda/soda-core'
 import {
   MutationObserverWatcher,
   IntervalWatcher
@@ -101,10 +101,9 @@ const nameWatcher = new MutationObserverWatcher(
 
 //@ts-ignore
 nameWatcher.on('onAdd', async () => {
-  debugger
   //@ts-ignore
-  const navLeft = nameWatcher.firstDOMProxy.current.querySelectorAll('a')
-  const href = navLeft[6]?.href // profile link
+  const navLeft = nameWatcher.firstDOMProxy.current as HTMLAnchorElement
+  const href = navLeft?.href // profile link
   if (href) {
     const userId = getUserID(href)
     const nickname = '@' + userId
@@ -152,23 +151,37 @@ function collectPostImgs() {
       async function handleBindPost() {
         const bindText = BINDING_CONTENT_TITLE
         if (tweetNode!.innerText.indexOf(bindText) > -1) {
-          let tweetId = ''
+          let tweetId = '',
+            authorId = '',
+            authorAddress = ''
           const tweetLinks = tweetNode!.querySelectorAll('a')
           for (let i = 0; i < tweetLinks.length; i++) {
             if (tweetLinks[i].href.includes('/status/')) {
               tweetId = tweetLinks[i].href
+              const url = new URL(tweetId)
+              authorId =
+                '@' +
+                url.pathname.replace(/^\//, '').replace(/\/$/, '').split('/')[0]
+              authorAddress =
+                tweetNode!.innerText.match(/(\b0x[a-fA-F0-9]{40}\b)/g)?.[0] ||
+                '';
               break
             }
           }
           console.log('tweetId: ', tweetId)
           const _binding = await getBindingContent()
+
+          const tid = await getTwitterId()
+          const addr = await getUserAccount()
           if (_binding && _binding.content_id === tweetId) {
             // already binded post
             return
-          } else if (_binding && !_binding.content_id) {
-            const addr = await getUserAccount()
-            const tid = await getTwitterId()
-
+          } else if (
+            _binding &&
+            !_binding.content_id &&
+            authorId === tid &&
+            authorAddress === addr
+          ) {
             console.log('handleBindPost')
             const bindRes = await bindPost({
               addr,
@@ -176,8 +189,11 @@ function collectPostImgs() {
               platform: PLATFORM.Twitter,
               content_id: tweetId
             })
-            console.log('bindPost: ', bindRes)
-            message.success('Bind successful!')
+            if (bindRes) {
+              message.success('Bind successful!')
+            }
+           
+
             // window.location.reload();
           }
         }
