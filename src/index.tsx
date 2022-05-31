@@ -38,7 +38,7 @@ import { postIdParser } from './utils/posts'
 import { message } from 'antd'
 import { newPostTrigger, pasteShareTextToEditor } from './utils/handleShare'
 import { getTwitterId, StorageKeys } from './utils/utils'
-import { getUserID } from './utils'
+import { getUserID } from './utils/posts'
 
 export const APP_NAME = 'Twitter'
 export const PLAT_TWIN_OPEN = 'PLAT_TWIN_OPEN'
