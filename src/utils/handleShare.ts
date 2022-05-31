@@ -1,16 +1,4 @@
-import {
-  getLocal,
-  removeLocal,
-  StorageKeys,
-  mixWatermarkImg,
-  generateQrCodeBase64,
-  dispatchCustomEvents,
-  isMobileTwitter,
-  POST_SHARE_TEXT,
-  decodeMetaData
-} from '@soda/soda-core'
-
-import { message } from 'antd'
+import { dispatchCustomEvents, POST_SHARE_TEXT } from '@soda/soda-core-ui'
 import {
   hasEditor,
   hasFocus,
@@ -19,6 +7,7 @@ import {
   postEditorDraftContentSelector,
   untilElementAvailable
 } from '../selector'
+import { isMobileTwitter } from './utils'
 
 export const delay = async (time: number) => {
   return new Promise((resolve, reject) => {
@@ -72,40 +61,3 @@ export const pasteShareTextToEditor = async (str?: string) => {
   const text = str || POST_SHARE_TEXT
   await pasteTextToPostEditor(text)
 }
-
-const shareHandler = async () => {
-  try {
-    const meta = await getLocal(StorageKeys.SHARING_NFT_META)
-    if (!meta) return
-    const metaData = await decodeMetaData(meta)
-    const { source, tokenId } = metaData
-    console.log('shareHandler: ', source, tokenId)
-    const imgUrl = source
-    const qrcode = await generateQrCodeBase64(meta)
-    if (meta && tokenId) {
-      const [imgDataUrl, imgDataBlob] = await mixWatermarkImg(imgUrl!, qrcode)
-      const clipboardData = []
-      newPostTrigger()
-      message.success(
-        'The resource has been saved to the clipboard. Paste to proceed share.'
-      )
-      // 触发document focus
-      document.body.click()
-
-      await pasteShareTextToEditor()
-      // clear clipboard
-      navigator.clipboard.writeText('')
-      //@ts-ignore
-      clipboardData.push(new ClipboardItem({ 'image/png': imgDataBlob }))
-
-      //@ts-ignore
-      await navigator.clipboard.write(clipboardData)
-
-      await removeLocal(StorageKeys.SHARING_NFT_META)
-    }
-  } catch (err) {
-    console.log(err)
-  }
-}
-
-export default shareHandler
