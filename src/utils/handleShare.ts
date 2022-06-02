@@ -53,7 +53,7 @@ export const pasteTextToPostEditor = async (text: string) => {
       dispatchCustomEvents(i.evaluate()!, 'paste', text)
     }
   } catch (e) {
-    console.log('>>>>>>>>>>', e)
+    console.error('[twitter-hook] pasteTextToPostEditor: ', e)
   }
 }
 

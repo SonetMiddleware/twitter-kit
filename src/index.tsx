@@ -61,7 +61,7 @@ const watcher = new MutationObserverWatcher(
 
 //@ts-ignore
 watcher.on('onAdd', () => {
-  console.log(watcher.firstDOMProxy)
+  console.debug('[twitter-hook] onAdd: ', watcher.firstDOMProxy)
   if (watcher.firstDOMProxy.realCurrent) {
     const modal = watcher.firstDOMProxy.realCurrent
     const postEditorToolbar = modal.querySelector(
@@ -85,7 +85,6 @@ topSidebarWatcher.on('onAdd', () => {
     //avoid two icons
     return
   }
-  console.log('topSidebar: ', topSidebarWatcher.firstDOMProxy.realCurrent)
   const toolBar = topSidebarWatcher.firstDOMProxy.realCurrent
   const dom = document.createElement('span')
   toolBar?.appendChild(dom)
@@ -214,7 +213,7 @@ function collectPostInfo(tweetNode: HTMLDivElement | null) {
     .then(() => handleTwitterImg(tweetNode))
     .catch((err) => {
       // no qr code matched
-      // console.log(err)
+      // console.error(err)
     })
 }
 
@@ -308,7 +307,6 @@ const handleFullscreenTweetImgs = async () => {
       const divParent = imgEle?.parentElement
       if (divParent) {
         const width = imgEle?.getBoundingClientRect().width
-        console.log('fullScreenImage: ', width)
         if (width < 100) {
           continue
         }
@@ -316,7 +314,7 @@ const handleFullscreenTweetImgs = async () => {
           continue
         }
         const uesrname = window.location.pathname.split('/')[1]
-        console.log('fullScreenImg, ', uesrname)
+        console.debug('[twitter-hook] fullScreenImage: ', width, uesrname)
         const dom = await handleTweetImg(imgEle, '@' + uesrname)
         divParent?.appendChild(dom)
       }
