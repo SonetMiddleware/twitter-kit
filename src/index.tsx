@@ -164,7 +164,7 @@ function collectPostImgs() {
                 url.pathname.replace(/^\//, '').replace(/\/$/, '').split('/')[0]
               authorAddress =
                 tweetNode!.innerText.match(/(\b0x[a-fA-F0-9]{40}\b)/g)?.[0] ||
-                '';
+                ''
               break
             }
           }
@@ -192,7 +192,6 @@ function collectPostImgs() {
             if (bindRes) {
               message.success('Bind successful!')
             }
-           
 
             // window.location.reload();
           }
@@ -338,9 +337,9 @@ const fullScreenImgLoadingWatcher = new MutationObserverWatcher(
 const handleFullscreenTweetImgs = async () => {
   const imgEles =
     fullScreenImgWatcher.firstDOMProxy.realCurrent?.querySelectorAll(
-      'img[alt="Image"][draggable="true"]'
+      'img[draggable="true"]'
     )
-
+  debugger
   if (imgEles && imgEles.length > 0) {
     for (let i = 0; i < imgEles.length; i++) {
       const imgEle = imgEles[i] as HTMLImageElement
