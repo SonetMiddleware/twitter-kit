@@ -298,9 +298,8 @@ const fullScreenImgLoadingWatcher = new MutationObserverWatcher(
 const handleFullscreenTweetImgs = async () => {
   const imgEles =
     fullScreenImgWatcher.firstDOMProxy.realCurrent?.querySelectorAll(
-      'img[alt="Image"][draggable="true"]'
+      'img[draggable="true"]'
     )
-
   if (imgEles && imgEles.length > 0) {
     for (let i = 0; i < imgEles.length; i++) {
       const imgEle = imgEles[i] as HTMLImageElement
