@@ -55,60 +55,6 @@ function App() {
   )
 }
 
-const watcher = new MutationObserverWatcher(
-  Selectors.postEditorContentInPopupSelector()
-)
-
-//@ts-ignore
-watcher.on('onAdd', () => {
-  console.debug('[twitter-hook] onAdd: ', watcher.firstDOMProxy)
-  if (watcher.firstDOMProxy.realCurrent) {
-    const modal = watcher.firstDOMProxy.realCurrent
-    const postEditorToolbar = modal.querySelector(
-      '[data-testid="toolBar"] > div'
-    )
-    const dom = document.createElement('span')
-    postEditorToolbar?.appendChild(dom)
-    ReactDOM.render(<App />, dom)
-  }
-})
-//@ts-ignore
-watcher.on('onRemove', () => {})
-
-const topSidebarWatcher = new MutationObserverWatcher(
-  Selectors.postEditorToolbarSelector()
-)
-
-//@ts-ignore
-topSidebarWatcher.on('onAdd', () => {
-  if (watcher.firstDOMProxy.realCurrent) {
-    //avoid two icons
-    return
-  }
-  const toolBar = topSidebarWatcher.firstDOMProxy.realCurrent
-  const dom = document.createElement('span')
-  toolBar?.appendChild(dom)
-  ReactDOM.render(<App />, dom)
-})
-
-// watch and add nickname
-const nameWatcher = new MutationObserverWatcher(
-  Selectors.twitterNickNameSelector()
-)
-
-//@ts-ignore
-nameWatcher.on('onAdd', async () => {
-  //@ts-ignore
-  const navLeft = nameWatcher.firstDOMProxy.current as HTMLAnchorElement
-  const href = navLeft?.href // profile link
-  if (href) {
-    const userId = getUserID(href)
-    const nickname = '@' + userId
-    console.debug('[twitter-hook] app account: ', nickname)
-    await saveLocal(StorageKeys.TWITTER_NICKNAME, nickname)
-  }
-})
-
 let binding: BindInfo
 async function getBindingContent() {
   if (binding) return binding
@@ -287,14 +233,6 @@ async function handleTwitterImg(tweetNode: any) {
   // })
 }
 
-// watch fullscreen tweet image
-const fullScreenImgWatcher = new MutationObserverWatcher(
-  Selectors.tweetImageFullscreenSelector()
-)
-const fullScreenImgLoadingWatcher = new MutationObserverWatcher(
-  Selectors.tweetImageFullscreenLoadingSelector()
-)
-
 const handleFullscreenTweetImgs = async () => {
   const imgEles =
     fullScreenImgWatcher.firstDOMProxy.realCurrent?.querySelectorAll(
@@ -320,56 +258,108 @@ const handleFullscreenTweetImgs = async () => {
     }
   }
 }
-//@ts-ignore
-fullScreenImgWatcher.on('onAdd', async () => {
-  handleFullscreenTweetImgs()
-})
 
-//@ts-ignore
-fullScreenImgLoadingWatcher.on('onRemove', () => {
-  handleFullscreenTweetImgs()
-})
-
+const bindBoxId = 'plattwin-bind-box'
 let creatingBindBox = false
 
-// const mainWatcher = new MutationObserverWatcher(Selectors.postsSelector());
-const mainWatcher = new MutationObserverWatcher(Selectors.mainContentSelector())
-const bindBoxId = 'plattwin-bind-box'
-//@ts-ignore
-mainWatcher.on('onAdd', () => {
-  if (creatingBindBox) {
-    return
-  } else {
-    creatingBindBox = true
-  }
-  console.debug('[twitter-hook] mainDiv: ', mainWatcher.firstDOMProxy)
-  const mainDiv: any = document.querySelector('[role=main]')
-  // @ts-ignore
-  mainDiv.style = 'position:relative'
-  const dom: any = document.createElement('div')
-  dom.id = bindBoxId
-  dom.style = 'position:fixed;top:20px;right:20px;'
-  mainDiv?.appendChild(dom)
-  ReactDOM.render(<InlineApplicationBindBox app={APP_NAME} />, dom)
-  mainWatcher.stopWatch()
-})
+let watcher: any = null,
+  topSidebarWatcher: any = null,
+  nameWatcher: any = null,
+  fullScreenImgWatcher: any = null,
+  fullScreenImgLoadingWatcher: any = null,
+  mainWatcher: any = null
 
-function getUserPage(meta: { appid?: string }) {
-  const { appid } = meta
-  const host = getConfig().hostLeadingUrl
-  return `${host}/${appid ? appid : ''}`
-}
-export function getConfig() {
-  return {
-    hostIdentifier: 'twitter.com',
-    hostLeadingUrl: 'https://twitter.com',
-    hostLeadingUrlMobile: 'https://mobile.twitter.com',
-    icon: 'images/twitter.png'
-  }
+const initWatcher = () => {
+  watcher = new MutationObserverWatcher(
+    Selectors.postEditorContentInPopupSelector()
+  )
+  topSidebarWatcher = new MutationObserverWatcher(
+    Selectors.postEditorToolbarSelector()
+  )
+  // watch and add nickname
+  nameWatcher = new MutationObserverWatcher(Selectors.twitterNickNameSelector())
+  // watch fullscreen tweet image
+  fullScreenImgWatcher = new MutationObserverWatcher(
+    Selectors.tweetImageFullscreenSelector()
+  )
+  fullScreenImgLoadingWatcher = new MutationObserverWatcher(
+    Selectors.tweetImageFullscreenLoadingSelector()
+  )
+  mainWatcher = new MutationObserverWatcher(Selectors.mainContentSelector())
+
+  //@ts-ignore
+  watcher.on('onAdd', () => {
+    console.debug('[twitter-hook] onAdd: ', watcher.firstDOMProxy)
+    if (watcher.firstDOMProxy.realCurrent) {
+      const modal = watcher.firstDOMProxy.realCurrent
+      const postEditorToolbar = modal.querySelector(
+        '[data-testid="toolBar"] > div'
+      )
+      const dom = document.createElement('span')
+      postEditorToolbar?.appendChild(dom)
+      ReactDOM.render(<App />, dom)
+    }
+  })
+  //@ts-ignore
+  watcher.on('onRemove', () => {})
+
+  //@ts-ignore
+  topSidebarWatcher.on('onAdd', () => {
+    if (watcher.firstDOMProxy.realCurrent) {
+      //avoid two icons
+      return
+    }
+    const toolBar = topSidebarWatcher.firstDOMProxy.realCurrent
+    const dom = document.createElement('span')
+    toolBar?.appendChild(dom)
+    ReactDOM.render(<App />, dom)
+  })
+
+  //@ts-ignore
+  nameWatcher.on('onAdd', async () => {
+    //@ts-ignore
+    const navLeft = nameWatcher.firstDOMProxy.current as HTMLAnchorElement
+    const href = navLeft?.href // profile link
+    if (href) {
+      const userId = getUserID(href)
+      const nickname = '@' + userId
+      console.debug('[twitter-hook] app account: ', nickname)
+      await saveLocal(StorageKeys.TWITTER_NICKNAME, nickname)
+    }
+  })
+  //@ts-ignore
+  fullScreenImgWatcher.on('onAdd', async () => {
+    handleFullscreenTweetImgs()
+  })
+
+  //@ts-ignore
+  fullScreenImgLoadingWatcher.on('onRemove', () => {
+    handleFullscreenTweetImgs()
+  })
+
+  //@ts-ignore
+  mainWatcher.on('onAdd', () => {
+    if (creatingBindBox) {
+      return
+    } else {
+      creatingBindBox = true
+    }
+    console.debug('[twitter-hook] mainDiv: ', mainWatcher.firstDOMProxy)
+    const mainDiv: any = document.querySelector('[role=main]')
+    // @ts-ignore
+    mainDiv.style = 'position:relative'
+    const dom: any = document.createElement('div')
+    dom.id = bindBoxId
+    dom.style = 'position:fixed;top:20px;right:20px;'
+    mainDiv?.appendChild(dom)
+    ReactDOM.render(<InlineApplicationBindBox app={APP_NAME} />, dom)
+    mainWatcher.stopWatch()
+  })
 }
 
 function main() {
   // initial call
+  initWatcher()
   getAddress()
   getTwitterId()
   startWatch(watcher)
@@ -412,6 +402,20 @@ function main() {
 }
 
 export default main
+
+function getUserPage(meta: { appid?: string }) {
+  const { appid } = meta
+  const host = getConfig().hostLeadingUrl
+  return `${host}/${appid ? appid : ''}`
+}
+export function getConfig() {
+  return {
+    hostIdentifier: 'twitter.com',
+    hostLeadingUrl: 'https://twitter.com',
+    hostLeadingUrlMobile: 'https://mobile.twitter.com',
+    icon: 'images/twitter.png'
+  }
+}
 
 export const init = () => {
   registerApplication({
