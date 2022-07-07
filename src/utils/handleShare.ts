@@ -1,4 +1,9 @@
-import { dispatchCustomEvents, POST_SHARE_TEXT } from '@soda/soda-core-ui'
+import {
+  dispatchCustomEvents,
+  POST_SHARE_TEXT,
+  pasteImageToActiveElements
+} from '@soda/soda-core-ui'
+
 import {
   hasEditor,
   hasFocus,
@@ -29,7 +34,7 @@ export const newPostTrigger = () => {
   }
 }
 
-export const pasteTextToPostEditor = async (text: string) => {
+export const pasteTextToPostEditor = async (text: string, img?: Blob) => {
   const interval = 500
 
   if (!isCompose() && !hasEditor()) {
@@ -52,12 +57,18 @@ export const pasteTextToPostEditor = async (text: string) => {
     } else {
       dispatchCustomEvents(i.evaluate()!, 'paste', text)
     }
+    // if (img) {
+    //   i.evaluate()!.focus()
+    //   console.log('[extension-twitter] pasting img...', i.evaluate())
+    //   await pasteImageToActiveElements(img)
+    // }
   } catch (e) {
     console.error('[twitter-hook] pasteTextToPostEditor: ', e)
   }
 }
 
-export const pasteShareTextToEditor = async (str?: string) => {
+export const pasteShareTextToEditor = async (str:string, img?: Blob) => {
   const text = str || POST_SHARE_TEXT
-  await pasteTextToPostEditor(text)
+  // const text = POST_SHARE_TEXT
+  await pasteTextToPostEditor(text, img)
 }
