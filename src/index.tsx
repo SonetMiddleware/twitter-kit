@@ -25,7 +25,8 @@ import {
   getBindResult,
   renderTokenFromCacheMedia,
   BindInfo,
-  registerApplication
+  registerApplication,
+  traceTwitterForNFT
 } from '@soda/soda-core'
 import Logo from './assets/images/logo.png'
 import {
@@ -167,7 +168,7 @@ const spanStyles =
   'position:absolute;padding:5px;right:0;top:0;text-align:center;background:#fff;z-index:2'
 const className = 'plat-meta-span'
 
-const handleTweetImg = async (imgEle: HTMLImageElement, username: string) => {
+const handleTweetImg = async (imgEle: HTMLImageElement, userInfo: any) => {
   const bgDiv = imgEle.previousElementSibling! as HTMLDivElement
   console.debug('[twitter-hook] image container: ', bgDiv)
   const imgSrc = imgEle.src
@@ -178,6 +179,23 @@ const handleTweetImg = async (imgEle: HTMLImageElement, username: string) => {
       config: { replace: true }
     })
     if (res && res.result) {
+      //trace nft tweet
+      if (res.token && userInfo.tid) {
+        const params = {
+          // "chain_name": "",
+          chainId: res.token.chainId,
+          contract: res.token.contract,
+          token_id: res.token.tokenId!,
+          tid: userInfo.tid,
+          user_img: userInfo.user_img,
+          user_id: userInfo.user_id,
+          user_name: userInfo.user_name,
+          t_content: userInfo.t_content
+        }
+        traceTwitterForNFT(params).then((res) => {
+          console.log('[twitter-hook] trace tweet for nft res: ', res)
+        })
+      }
       bgDiv.style.display = 'none'
       imgEle.style.opacity = '1'
       imgEle.style.zIndex = '1'
@@ -188,7 +206,7 @@ const handleTweetImg = async (imgEle: HTMLImageElement, username: string) => {
         <InlineTokenToolbar
           token={res.token}
           originMediaSrc={imgSrc}
-          username={username}
+          username={userInfo.user_id}
           app={APP_NAME}
         />,
         dom
@@ -201,19 +219,42 @@ const handleTweetImg = async (imgEle: HTMLImageElement, username: string) => {
 
 const findTweetAuthorId = (tweetNode: HTMLDivElement) => {
   const aList = tweetNode.querySelectorAll('a')
+  const img = tweetNode.querySelector('img')
+  //@ts-ignore
+  const tweet = tweetNode.querySelector('[data-testid="tweetText"]')?.innerText
+  const info: any = {
+    user_img: img?.src,
+    user_name: aList[1].querySelectorAll('span')[1].innerText,
+    t_content: tweet
+  }
+  let user_id = ''
   for (const aItem of aList) {
     const spans = aItem.querySelectorAll('span')
     for (const spanItem of spans) {
       if (spanItem.innerText.startsWith('@')) {
-        return spanItem.innerText
+        user_id = spanItem.innerText
+        info.user_id = spanItem.innerText
+        break
       }
     }
+    if (user_id) {
+      break
+    }
   }
+  for (const aItem of aList) {
+    if (user_id && aItem.href.includes(`/${user_id.substring(1)}/status/`)) {
+      const str = `/${user_id.substring(1)}/status/`
+      const rest = aItem.href.substring(aItem.href.indexOf(str) + str.length)
+      const contentId = rest.split('/')[0]
+      info.tid = contentId
+      return info
+    }
+  }
+  return info
 }
 
 async function handleTwitterImg(tweetNode: any) {
-  const _username = findTweetAuthorId(tweetNode)
-  console.debug('[twitter-hook] handleTwitterImg username: ', _username)
+  const userInfo = findTweetAuthorId(tweetNode)
 
   const imgNodes = tweetNode.querySelectorAll(
     '[data-testid="tweet"] > div > div a[href*="photo"]'
@@ -227,7 +268,7 @@ async function handleTwitterImg(tweetNode: any) {
     }
     divParent.style.position = 'relative'
     const imgEle = node.querySelector('img[src*=media]') as HTMLImageElement
-    const dom = await handleTweetImg(imgEle, _username!)
+    const dom = await handleTweetImg(imgEle, userInfo!)
     if (dom) divParent?.appendChild(dom)
   }
   // })
@@ -252,7 +293,10 @@ const handleFullscreenTweetImgs = async () => {
         }
         const uesrname = window.location.pathname.split('/')[1]
         console.debug('[twitter-hook] fullScreenImage: ', width, uesrname)
-        const dom = await handleTweetImg(imgEle, '@' + uesrname)
+        const info = {
+          user_id: '@' + uesrname
+        }
+        const dom = await handleTweetImg(imgEle, info)
         divParent?.appendChild(dom)
       }
     }

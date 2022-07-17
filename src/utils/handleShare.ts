@@ -36,7 +36,6 @@ export const newPostTrigger = () => {
 
 export const pasteTextToPostEditor = async (text: string, img?: Blob) => {
   const interval = 500
-
   if (!isCompose() && !hasEditor()) {
     // open tweet window
     await untilElementAvailable(newPostButtonSelector())
@@ -67,7 +66,7 @@ export const pasteTextToPostEditor = async (text: string, img?: Blob) => {
   }
 }
 
-export const pasteShareTextToEditor = async (str:string, img?: Blob) => {
+export const pasteShareTextToEditor = async (str: string, img?: Blob) => {
   const text = str || POST_SHARE_TEXT
   // const text = POST_SHARE_TEXT
   await pasteTextToPostEditor(text, img)
