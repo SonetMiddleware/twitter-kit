@@ -1,9 +1,4 @@
-import {
-  dispatchCustomEvents,
-  POST_SHARE_TEXT,
-  pasteImageToActiveElements
-} from '@soda/soda-core-ui'
-
+import { inputText, pasteText, pasteImage } from '@soda/soda-event-util'
 import {
   hasEditor,
   hasFocus,
@@ -22,8 +17,7 @@ export const delay = async (time: number) => {
   })
 }
 
-export const isTwitterApp = window.location.href.includes('twitter')
-export const isFacebookApp = window.location.href.includes('facebook')
+const isTwitterApp = window.location.href.includes('twitter')
 
 export const newPostTrigger = () => {
   if (isTwitterApp) {
@@ -34,7 +28,8 @@ export const newPostTrigger = () => {
   }
 }
 
-export const pasteTextToPostEditor = async (text: string, img?: Blob) => {
+export const shareToEditor = async (content?: Array<string | Blob>) => {
+  if (!content) return
   const interval = 500
   if (!isCompose() && !hasEditor()) {
     // open tweet window
@@ -50,24 +45,21 @@ export const pasteTextToPostEditor = async (text: string, img?: Blob) => {
       i.evaluate()!.focus()
       await delay(interval)
     }
-    // paste
-    if (isMobileTwitter) {
-      dispatchCustomEvents(i.evaluate()!, 'input', text)
-    } else {
-      dispatchCustomEvents(i.evaluate()!, 'paste', text)
+    console.debug('[twitter-hook] dispatch paste event.....')
+    for (const c of content) {
+      if (!c) continue
+      if (typeof c === 'string') {
+        if (isMobileTwitter) {
+          await inputText(c)
+        } else {
+          await pasteText(c)
+        }
+      } else {
+        const arr = new Uint8Array(await new Response(c).arrayBuffer())
+        await pasteImage(arr)
+      }
     }
-    // if (img) {
-    //   i.evaluate()!.focus()
-    //   console.log('[extension-twitter] pasting img...', i.evaluate())
-    //   await pasteImageToActiveElements(img)
-    // }
   } catch (e) {
-    console.error('[twitter-hook] pasteTextToPostEditor: ', e)
+    console.error('[twitter-hook] pasteToPostEditor: ', e)
   }
-}
-
-export const pasteShareTextToEditor = async (str: string, img?: Blob) => {
-  const text = str || POST_SHARE_TEXT
-  // const text = POST_SHARE_TEXT
-  await pasteTextToPostEditor(text, img)
 }

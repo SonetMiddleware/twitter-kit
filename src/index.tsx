@@ -13,10 +13,8 @@ import {
   InlineTokenToolbar,
   InlineApplicationBindBox,
   saveLocal,
-  CustomEventId,
   postShareHandler,
-  removeTextInSharePost,
-  dispatchPaste
+  removeTextInSharePost
 } from '@soda/soda-core-ui'
 import {
   getAddress,
@@ -37,7 +35,7 @@ import {
 import { postIdParser } from './utils/posts'
 
 import { message } from 'antd'
-import { newPostTrigger, pasteShareTextToEditor } from './utils/handleShare'
+import { newPostTrigger, shareToEditor } from './utils/handleShare'
 import { getTwitterId, StorageKeys } from './utils/utils'
 import { getUserID } from './utils/posts'
 
@@ -185,12 +183,8 @@ const handleTweetImg = async (imgEle: HTMLImageElement, userInfo: any) => {
           // "chain_name": "",
           chainId: res.token.chainId,
           contract: res.token.contract,
-          token_id: res.token.tokenId!,
-          tid: userInfo.tid,
-          user_img: userInfo.user_img,
-          user_id: userInfo.user_id,
-          user_name: userInfo.user_name,
-          t_content: userInfo.t_content
+          tokenId: res.token.tokenId!,
+          info: userInfo
         }
         traceTwitterForNFT(params).then((res) => {
           console.log('[twitter-hook] trace tweet for nft res: ', res)
@@ -223,27 +217,27 @@ const findTweetAuthorId = (tweetNode: HTMLDivElement) => {
   //@ts-ignore
   const tweet = tweetNode.querySelector('[data-testid="tweetText"]')?.innerText
   const info: any = {
-    user_img: img?.src,
-    user_name: aList[1].querySelectorAll('span')[1].innerText,
-    t_content: tweet
+    userImg: img?.src,
+    username: aList[1].querySelectorAll('span')[1].innerText,
+    content: tweet
   }
-  let user_id = ''
+  let userId = ''
   for (const aItem of aList) {
     const spans = aItem.querySelectorAll('span')
     for (const spanItem of spans) {
       if (spanItem.innerText.startsWith('@')) {
-        user_id = spanItem.innerText
-        info.user_id = spanItem.innerText
+        userId = spanItem.innerText
+        info.userId = spanItem.innerText
         break
       }
     }
-    if (user_id) {
+    if (userId) {
       break
     }
   }
   for (const aItem of aList) {
-    if (user_id && aItem.href.includes(`/${user_id.substring(1)}/status/`)) {
-      const str = `/${user_id.substring(1)}/status/`
+    if (userId && aItem.href.includes(`/${userId.substring(1)}/status/`)) {
+      const str = `/${userId.substring(1)}/status/`
       const rest = aItem.href.substring(aItem.href.indexOf(str) + str.length)
       const contentId = rest.split('/')[0]
       info.tid = contentId
@@ -294,7 +288,7 @@ const handleFullscreenTweetImgs = async () => {
         const uesrname = window.location.pathname.split('/')[1]
         console.debug('[twitter-hook] fullScreenImage: ', width, uesrname)
         const info = {
-          user_id: '@' + uesrname
+          userId: '@' + uesrname
         }
         const dom = await handleTweetImg(imgEle, info)
         divParent?.appendChild(dom)
@@ -413,10 +407,7 @@ function main() {
   // render nft resources dialog
   const div = document.createElement('div')
   document.body.appendChild(div)
-  ReactDOM.render(
-    <ResourceDialog app={APP_NAME} publishFunc={pasteShareTextToEditor} />,
-    div
-  )
+  ReactDOM.render(<ResourceDialog shareCallback={shareToEditor} />, div)
 
   collectPostImgs()
   startWatch(fullScreenImgWatcher)
@@ -428,21 +419,6 @@ function main() {
 
   //handle share on intial
   postShareHandler(APP_NAME)
-
-  const { apply } = Reflect
-  document.addEventListener(CustomEventId, (e) => {
-    const ev = e as CustomEvent<string>
-    const [eventName, param, selector]: [keyof any, any[], string] = JSON.parse(
-      ev.detail
-    )
-    switch (eventName) {
-      case 'paste':
-        return apply(dispatchPaste, null, param)
-
-      default:
-        console.error(eventName, 'not handled')
-    }
-  })
 }
 
 export default main
@@ -469,7 +445,7 @@ export const init = () => {
       getUserPage,
       getConfig,
       newPostTrigger,
-      pasteShareTextToEditor
+      shareToEditor
     }
   })
 }
