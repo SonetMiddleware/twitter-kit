@@ -211,6 +211,54 @@ const handleTweetImg = async (imgEle: HTMLImageElement, userInfo: any) => {
   return null
 }
 
+let _twitterFullscreenImgSrc: string = ''
+const handleFullScreenTweetImg = async (
+  imgEle: HTMLImageElement,
+  userInfo: any
+) => {
+  const bgDiv = imgEle.previousElementSibling! as HTMLDivElement
+  console.debug('[twitter-hook] fullscreen image container: ', bgDiv)
+  const imgSrc = imgEle.src
+  if (_twitterFullscreenImgSrc === imgSrc) return
+  _twitterFullscreenImgSrc = imgSrc
+  console.debug('[twitter-hook] image source: ', imgSrc)
+  if (imgSrc) {
+    const res = await renderTokenFromCacheMedia(imgSrc, {
+      dom: bgDiv,
+      config: { extra: ['m3d'], css: 'width:100%;height:100%' }
+    })
+    if (res && res.result) {
+      //trace nft tweet
+      if (res.token && userInfo.tid) {
+        const params = {
+          chainId: res.token.chainId,
+          contract: res.token.contract,
+          tokenId: res.token.tokenId!,
+          info: userInfo
+        }
+        traceTwitterForNFT(params).then((res) => {
+          console.log('[twitter-hook] trace tweet for nft res: ', res)
+        })
+      }
+      imgEle.style.display = 'none'
+      const dom: any = document.createElement('div')
+      dom.style.cssText = spanStyles
+      dom.className = className
+      ReactDOM.render(
+        <InlineTokenToolbar
+          token={res.token}
+          originMediaSrc={imgSrc}
+          username={userInfo.user_id}
+          app={APP_NAME}
+        />,
+        dom
+      )
+      return dom
+    }
+  }
+  return null
+}
+
 const findTweetAuthorId = (tweetNode: HTMLDivElement) => {
   const aList = tweetNode.querySelectorAll('a')
   const img = tweetNode.querySelector('img')
@@ -290,7 +338,7 @@ const handleFullscreenTweetImgs = async () => {
         const info = {
           userId: '@' + uesrname
         }
-        const dom = await handleTweetImg(imgEle, info)
+        const dom = await handleFullScreenTweetImg(imgEle, info)
         divParent?.appendChild(dom)
       }
     }
@@ -373,6 +421,7 @@ const initWatcher = () => {
   //@ts-ignore
   fullScreenImgLoadingWatcher.on('onRemove', () => {
     handleFullscreenTweetImgs()
+    _twitterFullscreenImgSrc = ''
   })
 
   //@ts-ignore
