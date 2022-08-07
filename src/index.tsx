@@ -297,6 +297,7 @@ const findTweetAuthorId = (tweetNode: HTMLDivElement) => {
 
 async function handleTwitterImg(tweetNode: any) {
   const userInfo = findTweetAuthorId(tweetNode)
+  console.log('[twitter-kit] userinfo: ', userInfo)
 
   const imgNodes = tweetNode.querySelectorAll(
     '[data-testid="tweet"] > div > div a[href*="photo"]'
