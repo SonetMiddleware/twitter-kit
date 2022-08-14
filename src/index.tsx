@@ -200,7 +200,7 @@ const handleTweetImg = async (imgEle: HTMLImageElement, userInfo: any) => {
         <InlineTokenToolbar
           token={res.token}
           originMediaSrc={imgSrc}
-          username={userInfo.user_id}
+          username={userInfo.userId}
           app={APP_NAME}
         />,
         dom
