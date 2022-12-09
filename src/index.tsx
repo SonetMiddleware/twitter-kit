@@ -38,21 +38,6 @@ import { message } from 'antd'
 import { newPostTrigger, shareToEditor } from './utils/handleShare'
 import { getTwitterId, StorageKeys } from './utils/utils'
 import { getUserID } from './utils/posts'
-//@ts-ignore
-import * as fcl from '@onflow/fcl'
-
-fcl
-  .config()
-  // .put("accessNode.api", "http://localhost:8080") // local Flow emulator
-  // .put("challenge.handshake", "http://localhost:8701/flow/authenticate") // local dev wallet
-  .put('challenge.scope', 'email') // request for Email
-  .put('accessNode.api', 'https://access-testnet.onflow.org') // Flow testnet
-  .put('discovery.wallet', 'https://flow-wallet-testnet.blocto.app/authn') // Blocto testnet wallet
-  // .put('discovery.wallet', 'https://fcl-discovery.onflow.org/testnet/authn')
-  .put('service.OpenID.scopes', 'email!')
-  .put('app.detail.icon', '')
-  .put('app.detail.title', 'Soda')
-  .put('app.detail.url', 'www.soda.com')
 
 export const APP_NAME = 'Twitter'
 export const PLAT_TWIN_OPEN = 'PLAT_TWIN_OPEN'
@@ -122,8 +107,9 @@ function collectPostImgs() {
                 '@' +
                 url.pathname.replace(/^\//, '').replace(/\/$/, '').split('/')[0]
               authorAddress =
-                tweetNode!.innerText.match(/(\b0x[a-fA-F0-9]{40}\b)/g)?.[0] ||
-                ''
+                tweetNode!.innerText.match(
+                  /(\b0x[a-fA-F0-9]{16,40}\b)/g
+                )?.[0] || ''
               break
             }
           }
@@ -460,32 +446,7 @@ const initWatcher = () => {
   })
 }
 
-let currentUserRes
-function loginFLow() {
-  fcl.currentUser().subscribe((userRes: any) => {
-    console.log(userRes)
-    currentUserRes = userRes
-  }) // fires everytime account connection status updates
-  fcl.authenticate().then((res: any) => {
-    console.log(res)
-    signMessage()
-  })
-}
-
-const signMessage = () => {
-  const MSG = Buffer.from('hello world').toString('hex')
-  try {
-    fcl.currentUser.signUserMessage(MSG).then((res: any) => {
-      console.log('sign: ', res)
-    })
-  } catch (error) {
-    console.log(error)
-  }
-}
-
 function main() {
-  // initial call
-  // loginFLow()
   initWatcher()
   getAddress()
   getTwitterId()
